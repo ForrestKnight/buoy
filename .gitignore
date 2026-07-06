@@ -36,6 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-### Buoy ###
+### Buoy (local-only context, never committed) ###
 .devnotes/
 .env
+docs/BRIEF.md

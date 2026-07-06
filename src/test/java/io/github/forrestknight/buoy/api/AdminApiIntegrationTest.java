@@ -1,18 +1,28 @@
 package io.github.forrestknight.buoy.api;
 
 import io.github.forrestknight.buoy.TestcontainersConfiguration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+/**
+ * Full-stack CRUD tests, authenticated as the bootstrapped instance admin.
+ */
+@SpringBootTest(properties = {
+        "buoy.bootstrap.username=admin",
+        "buoy.bootstrap.password=admin-test-password",
+        "buoy.security.jwt-secret=integration-test-secret-0123456789abcdef"
+})
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class AdminApiIntegrationTest {
@@ -20,8 +30,26 @@ class AdminApiIntegrationTest {
     @Autowired
     private MockMvcTester mvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private String bearer;
+
+    @BeforeEach
+    void login() throws Exception {
+        var result = mvc.post().uri("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"username": "admin", "password": "admin-test-password"}""")
+                .exchange();
+        assertThat(result).hasStatusOk();
+        bearer = "Bearer " + objectMapper
+                .readTree(result.getResponse().getContentAsString()).get("token").asText();
+    }
+
     private void createProject(String key) {
         assertThat(mvc.post().uri("/api/v1/projects")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "%s", "name": "Project %s"}""".formatted(key, key)))
@@ -30,6 +58,7 @@ class AdminApiIntegrationTest {
 
     private void createEnvironment(String projectKey, String envKey) {
         assertThat(mvc.post().uri("/api/v1/projects/{p}/environments", projectKey)
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "%s", "name": "%s"}""".formatted(envKey, envKey)))
@@ -38,6 +67,7 @@ class AdminApiIntegrationTest {
 
     private void createFlag(String projectKey, String flagKey) {
         assertThat(mvc.post().uri("/api/v1/projects/{p}/flags", projectKey)
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "%s", "name": "Flag %s", "tags": ["test"]}""".formatted(flagKey, flagKey)))
@@ -48,21 +78,25 @@ class AdminApiIntegrationTest {
     void projectCrudRoundTrip() {
         createProject("crud-project");
 
-        assertThat(mvc.get().uri("/api/v1/projects/crud-project"))
+        assertThat(mvc.get().uri("/api/v1/projects/crud-project")
+                .header(HttpHeaders.AUTHORIZATION, bearer))
                 .hasStatusOk()
                 .bodyJson().extractingPath("$.name").isEqualTo("Project crud-project");
 
         assertThat(mvc.put().uri("/api/v1/projects/crud-project")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"name": "Renamed", "description": "now with description"}"""))
                 .hasStatusOk()
                 .bodyJson().extractingPath("$.description").isEqualTo("now with description");
 
-        assertThat(mvc.delete().uri("/api/v1/projects/crud-project"))
+        assertThat(mvc.delete().uri("/api/v1/projects/crud-project")
+                .header(HttpHeaders.AUTHORIZATION, bearer))
                 .hasStatus(HttpStatus.NO_CONTENT);
 
-        assertThat(mvc.get().uri("/api/v1/projects/crud-project"))
+        assertThat(mvc.get().uri("/api/v1/projects/crud-project")
+                .header(HttpHeaders.AUTHORIZATION, bearer))
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .bodyJson().extractingPath("$.title").isEqualTo("Resource not found");
     }
@@ -71,6 +105,7 @@ class AdminApiIntegrationTest {
     void duplicateProjectKeyIsConflict() {
         createProject("dupe-project");
         assertThat(mvc.post().uri("/api/v1/projects")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "dupe-project", "name": "Again"}"""))
@@ -81,6 +116,7 @@ class AdminApiIntegrationTest {
     @Test
     void malformedKeyIsRejectedWithFieldErrors() {
         assertThat(mvc.post().uri("/api/v1/projects")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "Not_Kebab", "name": "Bad"}"""))
@@ -95,7 +131,8 @@ class AdminApiIntegrationTest {
         createEnvironment("backfill-project", "prod");
         createFlag("backfill-project", "checkout-redesign");
 
-        assertThat(mvc.get().uri("/api/v1/projects/backfill-project/flags/checkout-redesign/config/prod"))
+        assertThat(mvc.get().uri("/api/v1/projects/backfill-project/flags/checkout-redesign/config/prod")
+                .header(HttpHeaders.AUTHORIZATION, bearer))
                 .hasStatusOk()
                 .bodyJson()
                 .hasPathSatisfying("$.enabled", enabled -> enabled.assertThat().isEqualTo(false))
@@ -108,7 +145,8 @@ class AdminApiIntegrationTest {
         createFlag("late-env-project", "existing-flag");
         createEnvironment("late-env-project", "staging");
 
-        assertThat(mvc.get().uri("/api/v1/projects/late-env-project/flags/existing-flag/config/staging"))
+        assertThat(mvc.get().uri("/api/v1/projects/late-env-project/flags/existing-flag/config/staging")
+                .header(HttpHeaders.AUTHORIZATION, bearer))
                 .hasStatusOk();
     }
 
@@ -117,6 +155,7 @@ class AdminApiIntegrationTest {
         createProject("rules-project");
         createEnvironment("rules-project", "prod");
         assertThat(mvc.post().uri("/api/v1/projects/rules-project/segments")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "beta-testers", "name": "Beta testers",
@@ -136,6 +175,7 @@ class AdminApiIntegrationTest {
                  ]}""";
 
         assertThat(mvc.put().uri("/api/v1/projects/rules-project/flags/new-payment-flow/config/prod")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(update))
                 .hasStatusOk()
@@ -145,6 +185,7 @@ class AdminApiIntegrationTest {
 
         // Same request again still claims version 0 → stale → 409
         assertThat(mvc.put().uri("/api/v1/projects/rules-project/flags/new-payment-flow/config/prod")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(update))
                 .hasStatus(HttpStatus.CONFLICT)
@@ -159,6 +200,7 @@ class AdminApiIntegrationTest {
 
         // Weights don't sum to 100_000
         assertThat(mvc.put().uri("/api/v1/projects/invalid-rules-project/flags/some-flag/config/prod")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"version": 0, "enabled": true, "defaultVariation": true, "offVariation": false,
@@ -170,6 +212,7 @@ class AdminApiIntegrationTest {
 
         // Rule references a segment that doesn't exist
         assertThat(mvc.put().uri("/api/v1/projects/invalid-rules-project/flags/some-flag/config/prod")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"version": 0, "enabled": true, "defaultVariation": true, "offVariation": false,
@@ -180,6 +223,7 @@ class AdminApiIntegrationTest {
 
         // Segments cannot nest segments
         assertThat(mvc.post().uri("/api/v1/projects/invalid-rules-project/segments")
+                .header(HttpHeaders.AUTHORIZATION, bearer)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"key": "nested", "name": "Nested",

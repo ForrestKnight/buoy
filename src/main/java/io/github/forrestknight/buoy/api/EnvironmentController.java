@@ -6,6 +6,7 @@ import io.github.forrestknight.buoy.api.EnvironmentDtos.UpdateEnvironmentRequest
 import io.github.forrestknight.buoy.service.EnvironmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
+/**
+ * Environments shape the project (and carry its SDK keys), so mutations
+ * require OWNER; reading requires membership.
+ */
 @RestController
 @RequestMapping("/api/v1/projects/{projectKey}/environments")
 public class EnvironmentController {
@@ -29,6 +34,7 @@ public class EnvironmentController {
     }
 
     @PostMapping
+    @PreAuthorize("@projectAccess.isOwner(authentication, #projectKey)")
     public ResponseEntity<EnvironmentResponse> create(@PathVariable String projectKey,
                                                       @Valid @RequestBody CreateEnvironmentRequest request,
                                                       UriComponentsBuilder uri) {
@@ -41,22 +47,26 @@ public class EnvironmentController {
     }
 
     @GetMapping
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public List<EnvironmentResponse> list(@PathVariable String projectKey) {
         return environmentService.list(projectKey).stream().map(EnvironmentResponse::from).toList();
     }
 
     @GetMapping("/{environmentKey}")
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public EnvironmentResponse get(@PathVariable String projectKey, @PathVariable String environmentKey) {
         return EnvironmentResponse.from(environmentService.get(projectKey, environmentKey));
     }
 
     @PutMapping("/{environmentKey}")
+    @PreAuthorize("@projectAccess.isOwner(authentication, #projectKey)")
     public EnvironmentResponse update(@PathVariable String projectKey, @PathVariable String environmentKey,
                                       @Valid @RequestBody UpdateEnvironmentRequest request) {
         return EnvironmentResponse.from(environmentService.update(projectKey, environmentKey, request.name()));
     }
 
     @DeleteMapping("/{environmentKey}")
+    @PreAuthorize("@projectAccess.isOwner(authentication, #projectKey)")
     public ResponseEntity<Void> delete(@PathVariable String projectKey, @PathVariable String environmentKey) {
         environmentService.delete(projectKey, environmentKey);
         return ResponseEntity.noContent().build();

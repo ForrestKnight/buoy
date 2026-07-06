@@ -6,6 +6,7 @@ import io.github.forrestknight.buoy.api.SegmentDtos.UpdateSegmentRequest;
 import io.github.forrestknight.buoy.service.SegmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ public class SegmentController {
     }
 
     @PostMapping
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public ResponseEntity<SegmentResponse> create(@PathVariable String projectKey,
                                                   @Valid @RequestBody CreateSegmentRequest request,
                                                   UriComponentsBuilder uri) {
@@ -42,16 +44,19 @@ public class SegmentController {
     }
 
     @GetMapping
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public List<SegmentResponse> list(@PathVariable String projectKey) {
         return segmentService.list(projectKey).stream().map(SegmentResponse::from).toList();
     }
 
     @GetMapping("/{segmentKey}")
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public SegmentResponse get(@PathVariable String projectKey, @PathVariable String segmentKey) {
         return SegmentResponse.from(segmentService.get(projectKey, segmentKey));
     }
 
     @PutMapping("/{segmentKey}")
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public SegmentResponse update(@PathVariable String projectKey, @PathVariable String segmentKey,
                                   @Valid @RequestBody UpdateSegmentRequest request) {
         return SegmentResponse.from(segmentService.update(projectKey, segmentKey, request.name(),
@@ -59,6 +64,7 @@ public class SegmentController {
     }
 
     @DeleteMapping("/{segmentKey}")
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public ResponseEntity<Void> delete(@PathVariable String projectKey, @PathVariable String segmentKey) {
         segmentService.delete(projectKey, segmentKey);
         return ResponseEntity.noContent().build();

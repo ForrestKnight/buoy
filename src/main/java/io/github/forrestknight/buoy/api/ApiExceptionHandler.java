@@ -2,6 +2,7 @@ package io.github.forrestknight.buoy.api;
 
 import io.github.forrestknight.buoy.service.DomainValidationException;
 import io.github.forrestknight.buoy.service.DuplicateKeyException;
+import io.github.forrestknight.buoy.service.InvalidCredentialsException;
 import io.github.forrestknight.buoy.service.NotFoundException;
 import io.github.forrestknight.buoy.service.StaleVersionException;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +28,11 @@ import java.util.Map;
  */
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail invalidCredentials(InvalidCredentialsException e) {
+        return problem(HttpStatus.UNAUTHORIZED, "Authentication failed", e.getMessage());
+    }
 
     @ExceptionHandler(NotFoundException.class)
     public ProblemDetail notFound(NotFoundException e) {

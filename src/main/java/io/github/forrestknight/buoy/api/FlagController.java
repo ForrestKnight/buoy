@@ -8,6 +8,7 @@ import io.github.forrestknight.buoy.api.FlagDtos.UpdateFlagRequest;
 import io.github.forrestknight.buoy.service.FlagService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +32,7 @@ public class FlagController {
     }
 
     @PostMapping
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public ResponseEntity<FlagResponse> create(@PathVariable String projectKey,
                                                @Valid @RequestBody CreateFlagRequest request,
                                                UriComponentsBuilder uri) {
@@ -44,16 +46,19 @@ public class FlagController {
     }
 
     @GetMapping
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public List<FlagResponse> list(@PathVariable String projectKey) {
         return flagService.list(projectKey).stream().map(FlagResponse::from).toList();
     }
 
     @GetMapping("/{flagKey}")
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public FlagResponse get(@PathVariable String projectKey, @PathVariable String flagKey) {
         return FlagResponse.from(flagService.get(projectKey, flagKey));
     }
 
     @PutMapping("/{flagKey}")
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public FlagResponse update(@PathVariable String projectKey, @PathVariable String flagKey,
                                @Valid @RequestBody UpdateFlagRequest request) {
         return FlagResponse.from(flagService.update(projectKey, flagKey, request.name(),
@@ -61,18 +66,21 @@ public class FlagController {
     }
 
     @DeleteMapping("/{flagKey}")
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public ResponseEntity<Void> delete(@PathVariable String projectKey, @PathVariable String flagKey) {
         flagService.delete(projectKey, flagKey);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{flagKey}/config/{environmentKey}")
+    @PreAuthorize("@projectAccess.canRead(authentication, #projectKey)")
     public FlagConfigResponse getConfig(@PathVariable String projectKey, @PathVariable String flagKey,
                                         @PathVariable String environmentKey) {
         return FlagConfigResponse.from(flagService.getConfig(projectKey, flagKey, environmentKey));
     }
 
     @PutMapping("/{flagKey}/config/{environmentKey}")
+    @PreAuthorize("@projectAccess.canEdit(authentication, #projectKey)")
     public FlagConfigResponse updateConfig(@PathVariable String projectKey, @PathVariable String flagKey,
                                            @PathVariable String environmentKey,
                                            @Valid @RequestBody UpdateFlagConfigRequest request) {
