@@ -31,8 +31,9 @@ import java.util.List;
  *       {@code @PreAuthorize("@projectAccess...")} method security.</li>
  * </ul>
  * SDK keys reach only the evaluation surface; the admin surface takes users (JWT)
- * or admin keys. {@code /api/v1/stream} is matched here as the contract for the
- * reserved SSE work — the endpoint itself does not exist yet.
+ * or admin keys. {@code /api/v1/stream} is matched here ahead of time as the
+ * authorization contract for the planned SSE endpoint (see the roadmap issue);
+ * the endpoint itself does not exist yet.
  */
 @Configuration
 @EnableWebSecurity
