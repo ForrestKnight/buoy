@@ -6,6 +6,7 @@ import io.github.forrestknight.buoy.domain.Project;
 import io.github.forrestknight.buoy.domain.Segment;
 import io.github.forrestknight.buoy.persistence.ProjectRepository;
 import io.github.forrestknight.buoy.persistence.SegmentRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,15 +20,18 @@ public class SegmentService {
     private final SegmentRepository segmentRepository;
     private final TargetingRuleValidator ruleValidator;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SegmentService(ProjectRepository projectRepository,
                           SegmentRepository segmentRepository,
                           TargetingRuleValidator ruleValidator,
-                          AuditService auditService) {
+                          AuditService auditService,
+                          ApplicationEventPublisher eventPublisher) {
         this.projectRepository = projectRepository;
         this.segmentRepository = segmentRepository;
         this.ruleValidator = ruleValidator;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     public Segment create(String projectKey, String key, String name, String description, List<Clause> clauses) {
@@ -39,6 +43,7 @@ public class SegmentService {
         Segment segment = segmentRepository.save(new Segment(project, key, name, description, clauses));
         auditService.record(AuditAction.CREATED, "SEGMENT", segment.getId(), segment.getKey(),
                 project.getId(), null, null, AuditSnapshots.of(segment));
+        eventPublisher.publishEvent(new SegmentChangedEvent(projectKey, project.getId(), segment.getKey()));
         return segment;
     }
 
@@ -62,6 +67,8 @@ public class SegmentService {
         segment.setClauses(clauses);
         auditService.record(AuditAction.UPDATED, "SEGMENT", segment.getId(), segment.getKey(),
                 segment.getProject().getId(), null, before, AuditSnapshots.of(segment));
+        eventPublisher.publishEvent(new SegmentChangedEvent(projectKey,
+                segment.getProject().getId(), segment.getKey()));
         return segment;
     }
 
@@ -69,6 +76,8 @@ public class SegmentService {
         Segment segment = get(projectKey, key);
         auditService.record(AuditAction.DELETED, "SEGMENT", segment.getId(), segment.getKey(),
                 segment.getProject().getId(), null, AuditSnapshots.of(segment), null);
+        eventPublisher.publishEvent(new SegmentChangedEvent(projectKey,
+                segment.getProject().getId(), segment.getKey()));
         segmentRepository.delete(segment);
     }
 

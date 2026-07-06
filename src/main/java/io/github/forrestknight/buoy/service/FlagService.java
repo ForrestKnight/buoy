@@ -10,6 +10,7 @@ import io.github.forrestknight.buoy.persistence.EnvironmentRepository;
 import io.github.forrestknight.buoy.persistence.FlagConfigRepository;
 import io.github.forrestknight.buoy.persistence.FlagRepository;
 import io.github.forrestknight.buoy.persistence.ProjectRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,19 +26,31 @@ public class FlagService {
     private final FlagConfigRepository flagConfigRepository;
     private final TargetingRuleValidator ruleValidator;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public FlagService(ProjectRepository projectRepository,
                        EnvironmentRepository environmentRepository,
                        FlagRepository flagRepository,
                        FlagConfigRepository flagConfigRepository,
                        TargetingRuleValidator ruleValidator,
-                       AuditService auditService) {
+                       AuditService auditService,
+                       ApplicationEventPublisher eventPublisher) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.flagRepository = flagRepository;
         this.flagConfigRepository = flagConfigRepository;
         this.ruleValidator = ruleValidator;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
+    }
+
+    /** One event per environment: flag-level changes affect every environment's snapshot. */
+    private void publishForAllEnvironments(String projectKey, Long projectId, String flagKey,
+                                           FlagChangedEvent.Kind kind) {
+        for (Environment environment : environmentRepository.findByProjectId(projectId)) {
+            eventPublisher.publishEvent(new FlagChangedEvent(projectKey, environment.getKey(),
+                    environment.getId(), flagKey, kind));
+        }
     }
 
     /**
@@ -55,6 +68,7 @@ public class FlagService {
         }
         auditService.record(AuditAction.CREATED, "FLAG", flag.getId(), flag.getKey(),
                 project.getId(), null, null, AuditSnapshots.of(flag));
+        publishForAllEnvironments(projectKey, project.getId(), flag.getKey(), FlagChangedEvent.Kind.UPDATED);
         return flag;
     }
 
@@ -79,6 +93,8 @@ public class FlagService {
         flag.setArchived(archived);
         auditService.record(AuditAction.UPDATED, "FLAG", flag.getId(), flag.getKey(),
                 flag.getProject().getId(), null, before, AuditSnapshots.of(flag));
+        publishForAllEnvironments(projectKey, flag.getProject().getId(), flag.getKey(),
+                FlagChangedEvent.Kind.UPDATED);
         return flag;
     }
 
@@ -86,6 +102,8 @@ public class FlagService {
         Flag flag = get(projectKey, key);
         auditService.record(AuditAction.DELETED, "FLAG", flag.getId(), flag.getKey(),
                 flag.getProject().getId(), null, AuditSnapshots.of(flag), null);
+        publishForAllEnvironments(projectKey, flag.getProject().getId(), flag.getKey(),
+                FlagChangedEvent.Kind.DELETED);
         flagRepository.delete(flag);
     }
 
@@ -119,6 +137,8 @@ public class FlagService {
         auditService.record(AuditAction.UPDATED, "FLAG_CONFIG", config.getId(), config.getFlag().getKey(),
                 config.getFlag().getProject().getId(), config.getEnvironment().getId(),
                 before, AuditSnapshots.of(config));
+        eventPublisher.publishEvent(new FlagChangedEvent(projectKey, config.getEnvironment().getKey(),
+                config.getEnvironment().getId(), config.getFlag().getKey(), FlagChangedEvent.Kind.UPDATED));
         return config;
     }
 

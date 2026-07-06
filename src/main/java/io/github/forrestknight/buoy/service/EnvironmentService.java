@@ -9,6 +9,7 @@ import io.github.forrestknight.buoy.persistence.EnvironmentRepository;
 import io.github.forrestknight.buoy.persistence.FlagConfigRepository;
 import io.github.forrestknight.buoy.persistence.FlagRepository;
 import io.github.forrestknight.buoy.persistence.ProjectRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,20 @@ public class EnvironmentService {
     private final FlagRepository flagRepository;
     private final FlagConfigRepository flagConfigRepository;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public EnvironmentService(ProjectRepository projectRepository,
                               EnvironmentRepository environmentRepository,
                               FlagRepository flagRepository,
                               FlagConfigRepository flagConfigRepository,
-                              AuditService auditService) {
+                              AuditService auditService,
+                              ApplicationEventPublisher eventPublisher) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.flagRepository = flagRepository;
         this.flagConfigRepository = flagConfigRepository;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -79,6 +83,7 @@ public class EnvironmentService {
         Environment environment = get(projectKey, key);
         auditService.record(AuditAction.DELETED, "ENVIRONMENT", environment.getId(), environment.getKey(),
                 environment.getProject().getId(), environment.getId(), AuditSnapshots.of(environment), null);
+        eventPublisher.publishEvent(new EnvironmentRemovedEvent(environment.getId()));
         environmentRepository.delete(environment);
     }
 

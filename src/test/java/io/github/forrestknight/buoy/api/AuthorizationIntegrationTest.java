@@ -229,12 +229,14 @@ class AuthorizationIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, sdkToken))
                 .hasStatus(HttpStatus.FORBIDDEN);
 
-        // Evaluation surface: authenticated (404 because the endpoint ships in Phase 1, not 401/403)
+        // Evaluation surface: full access
         assertThat(mvc.post().uri("/api/v1/evaluate/some-flag")
                 .header(HttpHeaders.AUTHORIZATION, sdkToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-                .hasStatus(HttpStatus.NOT_FOUND);
+                .content("""
+                        {"key": "user-1"}"""))
+                .hasStatusOk()
+                .bodyJson().hasPathSatisfying("$.reason", r -> r.assertThat().isEqualTo("OFF"));
     }
 
     @Test
