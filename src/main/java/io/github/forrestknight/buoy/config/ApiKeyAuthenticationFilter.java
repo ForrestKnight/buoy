@@ -1,9 +1,8 @@
 package io.github.forrestknight.buoy.config;
 
 import io.github.forrestknight.buoy.config.ApiKeyAuthentication.ApiKeyPrincipal;
-import io.github.forrestknight.buoy.domain.ApiKey;
 import io.github.forrestknight.buoy.domain.ApiKeyKind;
-import io.github.forrestknight.buoy.service.ApiKeyService;
+import io.github.forrestknight.buoy.service.ApiKeyAuthenticationCache;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,10 +24,10 @@ import java.util.List;
  */
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
-    private final ApiKeyService apiKeyService;
+    private final ApiKeyAuthenticationCache authenticationCache;
 
-    public ApiKeyAuthenticationFilter(ApiKeyService apiKeyService) {
-        this.apiKeyService = apiKeyService;
+    public ApiKeyAuthenticationFilter(ApiKeyAuthenticationCache authenticationCache) {
+        this.authenticationCache = authenticationCache;
     }
 
     @Override
@@ -36,10 +35,9 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            apiKeyService.authenticate(token).ifPresent(key -> {
-                SecurityContextHolder.getContext().setAuthentication(
-                        new ApiKeyAuthentication(principalOf(key), List.of(authorityOf(key))));
-            });
+            authenticationCache.authenticate(token).ifPresent(principal ->
+                    SecurityContextHolder.getContext().setAuthentication(
+                            new ApiKeyAuthentication(principal, List.of(authorityOf(principal)))));
         }
         filterChain.doFilter(request, response);
     }
@@ -53,14 +51,8 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         return candidate.startsWith("buoy_") ? candidate : null;
     }
 
-    private ApiKeyPrincipal principalOf(ApiKey key) {
-        return new ApiKeyPrincipal(key.getId(), key.getKind(), key.getName(),
-                key.getEnvironment().getId(), key.getEnvironment().getKey(),
-                key.getEnvironment().getProject().getId(), key.getEnvironment().getProject().getKey());
-    }
-
-    private SimpleGrantedAuthority authorityOf(ApiKey key) {
+    private SimpleGrantedAuthority authorityOf(ApiKeyPrincipal principal) {
         return new SimpleGrantedAuthority(
-                key.getKind() == ApiKeyKind.SERVER_SDK ? "ROLE_SDK" : "ROLE_ADMIN_KEY");
+                principal.kind() == ApiKeyKind.SERVER_SDK ? "ROLE_SDK" : "ROLE_ADMIN_KEY");
     }
 }

@@ -7,6 +7,7 @@ import io.github.forrestknight.buoy.domain.Environment;
 import io.github.forrestknight.buoy.persistence.ApiKeyRepository;
 import io.github.forrestknight.buoy.persistence.EnvironmentRepository;
 import io.github.forrestknight.buoy.persistence.ProjectRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,16 +31,19 @@ public class ApiKeyService {
     private final EnvironmentRepository environmentRepository;
     private final ProjectRepository projectRepository;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public ApiKeyService(ApiKeyRepository apiKeyRepository,
                          EnvironmentRepository environmentRepository,
                          ProjectRepository projectRepository,
-                         AuditService auditService) {
+                         AuditService auditService,
+                         ApplicationEventPublisher eventPublisher) {
         this.apiKeyRepository = apiKeyRepository;
         this.environmentRepository = environmentRepository;
         this.projectRepository = projectRepository;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /** The plaintext token, returned exactly once at creation. */
@@ -73,6 +77,7 @@ public class ApiKeyService {
             key.revoke(Instant.now());
             auditService.record(AuditAction.UPDATED, "API_KEY", key.getId(), key.getTokenPrefix(),
                     environment.getProject().getId(), environment.getId(), before, AuditSnapshots.of(key));
+            eventPublisher.publishEvent(new ApiKeyRevokedEvent(key.getTokenHash()));
         }
     }
 

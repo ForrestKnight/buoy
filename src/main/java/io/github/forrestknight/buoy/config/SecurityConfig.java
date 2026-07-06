@@ -1,6 +1,6 @@
 package io.github.forrestknight.buoy.config;
 
-import io.github.forrestknight.buoy.service.ApiKeyService;
+import io.github.forrestknight.buoy.service.ApiKeyAuthenticationCache;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -41,11 +41,12 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ApiKeyService apiKeyService) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ApiKeyAuthenticationCache authenticationCache)
+            throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(new ApiKeyAuthenticationFilter(apiKeyService),
+                .addFilterBefore(new ApiKeyAuthenticationFilter(authenticationCache),
                         UsernamePasswordAuthenticationFilter.class)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(bearerTokenResolver())
