@@ -1,0 +1,36 @@
+services:
+  buoy:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      BUOY_DB_HOST: postgres
+      BUOY_DB_NAME: buoy
+      BUOY_DB_USER: buoy
+      BUOY_DB_PASSWORD: buoy
+      # Demo profile seeds two fake projects and prints demo credentials +
+      # an SDK key to the log. Remove this line for a real deployment and
+      # set BUOY_BOOTSTRAP_USERNAME / BUOY_BOOTSTRAP_PASSWORD instead.
+      SPRING_PROFILES_ACTIVE: demo
+      # Set a stable secret in real deployments so admin tokens survive restarts:
+      # BUOY_SECURITY_JWT_SECRET: change-me-to-a-32+-byte-random-string
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: buoy
+      POSTGRES_USER: buoy
+      POSTGRES_PASSWORD: buoy
+    volumes:
+      - buoy-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buoy -d buoy"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  buoy-pgdata:
