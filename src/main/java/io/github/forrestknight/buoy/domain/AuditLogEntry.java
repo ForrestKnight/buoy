@@ -1,6 +1,5 @@
 package io.github.forrestknight.buoy.domain;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -59,8 +58,9 @@ public class AuditLogEntry {
     @Column(name = "environment_id")
     private Long environmentId;
 
+    /** JSON document {@code {"before": ..., "after": ...}}, stored as jsonb. */
     @JdbcTypeCode(SqlTypes.JSON)
-    private JsonNode diff;
+    private String diff;
 
     private String source;
 
@@ -69,7 +69,7 @@ public class AuditLogEntry {
 
     public AuditLogEntry(ActorType actorType, String actorName, AuditAction action, String entityType,
                          Long entityId, String entityKey, Long projectId, Long environmentId,
-                         JsonNode diff, String source) {
+                         String diff, String source) {
         this.actorType = actorType;
         this.actorName = actorName;
         this.action = action;
@@ -122,7 +122,7 @@ public class AuditLogEntry {
         return environmentId;
     }
 
-    public JsonNode getDiff() {
+    public String getDiff() {
         return diff;
     }
 

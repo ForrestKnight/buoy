@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.Environment;
 import io.github.forrestknight.buoy.domain.Flag;
 import io.github.forrestknight.buoy.domain.FlagConfig;
@@ -21,15 +22,18 @@ public class EnvironmentService {
     private final EnvironmentRepository environmentRepository;
     private final FlagRepository flagRepository;
     private final FlagConfigRepository flagConfigRepository;
+    private final AuditService auditService;
 
     public EnvironmentService(ProjectRepository projectRepository,
                               EnvironmentRepository environmentRepository,
                               FlagRepository flagRepository,
-                              FlagConfigRepository flagConfigRepository) {
+                              FlagConfigRepository flagConfigRepository,
+                              AuditService auditService) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.flagRepository = flagRepository;
         this.flagConfigRepository = flagConfigRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -45,6 +49,8 @@ public class EnvironmentService {
         for (Flag flag : flagRepository.findByProjectId(project.getId())) {
             flagConfigRepository.save(new FlagConfig(flag, environment));
         }
+        auditService.record(AuditAction.CREATED, "ENVIRONMENT", environment.getId(), environment.getKey(),
+                project.getId(), environment.getId(), null, AuditSnapshots.of(environment));
         return environment;
     }
 
@@ -62,12 +68,18 @@ public class EnvironmentService {
 
     public Environment update(String projectKey, String key, String name) {
         Environment environment = get(projectKey, key);
+        var before = AuditSnapshots.of(environment);
         environment.setName(name);
+        auditService.record(AuditAction.UPDATED, "ENVIRONMENT", environment.getId(), environment.getKey(),
+                environment.getProject().getId(), environment.getId(), before, AuditSnapshots.of(environment));
         return environment;
     }
 
     public void delete(String projectKey, String key) {
-        environmentRepository.delete(get(projectKey, key));
+        Environment environment = get(projectKey, key);
+        auditService.record(AuditAction.DELETED, "ENVIRONMENT", environment.getId(), environment.getKey(),
+                environment.getProject().getId(), environment.getId(), AuditSnapshots.of(environment), null);
+        environmentRepository.delete(environment);
     }
 
     private Project project(String projectKey) {

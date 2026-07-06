@@ -2,6 +2,7 @@ package io.github.forrestknight.buoy.service;
 
 import io.github.forrestknight.buoy.domain.ApiKey;
 import io.github.forrestknight.buoy.domain.ApiKeyKind;
+import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.Environment;
 import io.github.forrestknight.buoy.persistence.ApiKeyRepository;
 import io.github.forrestknight.buoy.persistence.EnvironmentRepository;
@@ -28,14 +29,17 @@ public class ApiKeyService {
     private final ApiKeyRepository apiKeyRepository;
     private final EnvironmentRepository environmentRepository;
     private final ProjectRepository projectRepository;
+    private final AuditService auditService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public ApiKeyService(ApiKeyRepository apiKeyRepository,
                          EnvironmentRepository environmentRepository,
-                         ProjectRepository projectRepository) {
+                         ProjectRepository projectRepository,
+                         AuditService auditService) {
         this.apiKeyRepository = apiKeyRepository;
         this.environmentRepository = environmentRepository;
         this.projectRepository = projectRepository;
+        this.auditService = auditService;
     }
 
     /** The plaintext token, returned exactly once at creation. */
@@ -49,6 +53,8 @@ public class ApiKeyService {
         String token = prefix + secret;
         ApiKey key = apiKeyRepository.save(new ApiKey(environment, kind, name,
                 sha256(token), prefix + secret.substring(0, 4)));
+        auditService.record(AuditAction.CREATED, "API_KEY", key.getId(), key.getTokenPrefix(),
+                environment.getProject().getId(), environment.getId(), null, AuditSnapshots.of(key));
         return new IssuedKey(key, token);
     }
 
@@ -63,7 +69,10 @@ public class ApiKeyService {
                 .filter(k -> k.getEnvironment().getId().equals(environment.getId()))
                 .orElseThrow(() -> new NotFoundException("API key", String.valueOf(keyId)));
         if (!key.isRevoked()) {
+            var before = AuditSnapshots.of(key);
             key.revoke(Instant.now());
+            auditService.record(AuditAction.UPDATED, "API_KEY", key.getId(), key.getTokenPrefix(),
+                    environment.getProject().getId(), environment.getId(), before, AuditSnapshots.of(key));
         }
     }
 

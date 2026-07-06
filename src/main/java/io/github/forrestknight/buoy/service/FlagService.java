@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.Environment;
 import io.github.forrestknight.buoy.domain.Flag;
 import io.github.forrestknight.buoy.domain.FlagConfig;
@@ -23,17 +24,20 @@ public class FlagService {
     private final FlagRepository flagRepository;
     private final FlagConfigRepository flagConfigRepository;
     private final TargetingRuleValidator ruleValidator;
+    private final AuditService auditService;
 
     public FlagService(ProjectRepository projectRepository,
                        EnvironmentRepository environmentRepository,
                        FlagRepository flagRepository,
                        FlagConfigRepository flagConfigRepository,
-                       TargetingRuleValidator ruleValidator) {
+                       TargetingRuleValidator ruleValidator,
+                       AuditService auditService) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.flagRepository = flagRepository;
         this.flagConfigRepository = flagConfigRepository;
         this.ruleValidator = ruleValidator;
+        this.auditService = auditService;
     }
 
     /**
@@ -49,6 +53,8 @@ public class FlagService {
         for (Environment environment : environmentRepository.findByProjectId(project.getId())) {
             flagConfigRepository.save(new FlagConfig(flag, environment));
         }
+        auditService.record(AuditAction.CREATED, "FLAG", flag.getId(), flag.getKey(),
+                project.getId(), null, null, AuditSnapshots.of(flag));
         return flag;
     }
 
@@ -66,15 +72,21 @@ public class FlagService {
     public Flag update(String projectKey, String key, String name, String description,
                        List<String> tags, boolean archived) {
         Flag flag = get(projectKey, key);
+        var before = AuditSnapshots.of(flag);
         flag.setName(name);
         flag.setDescription(description);
         flag.setTags(tags);
         flag.setArchived(archived);
+        auditService.record(AuditAction.UPDATED, "FLAG", flag.getId(), flag.getKey(),
+                flag.getProject().getId(), null, before, AuditSnapshots.of(flag));
         return flag;
     }
 
     public void delete(String projectKey, String key) {
-        flagRepository.delete(get(projectKey, key));
+        Flag flag = get(projectKey, key);
+        auditService.record(AuditAction.DELETED, "FLAG", flag.getId(), flag.getKey(),
+                flag.getProject().getId(), null, AuditSnapshots.of(flag), null);
+        flagRepository.delete(flag);
     }
 
     @Transactional(readOnly = true)
@@ -99,10 +111,14 @@ public class FlagService {
         }
         List<TargetingRule> validated = ruleValidator.validateAndAssignIds(
                 config.getFlag().getProject().getId(), rules);
+        var before = AuditSnapshots.of(config);
         config.setEnabled(enabled);
         config.setRules(validated);
         config.setDefaultVariation(defaultVariation);
         config.setOffVariation(offVariation);
+        auditService.record(AuditAction.UPDATED, "FLAG_CONFIG", config.getId(), config.getFlag().getKey(),
+                config.getFlag().getProject().getId(), config.getEnvironment().getId(),
+                before, AuditSnapshots.of(config));
         return config;
     }
 

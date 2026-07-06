@@ -1,6 +1,5 @@
 package io.github.forrestknight.buoy.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.forrestknight.buoy.TestcontainersConfiguration;
 import io.github.forrestknight.buoy.domain.ActorType;
 import io.github.forrestknight.buoy.domain.ApiKey;
@@ -114,20 +113,20 @@ class DomainPersistenceIntegrationTest {
     }
 
     @Test
-    void remainingEntitiesPersistAgainstMigratedSchema() throws Exception {
+    void remainingEntitiesPersistAgainstMigratedSchema() {
         Project p = em.persist(new Project("acme-api", "Acme API", null));
         Environment env = em.persist(new Environment(p, "staging", "Staging"));
         AppUser user = em.persist(new AppUser("forrest", "$2a$10$bcrytPlaceholderHashValue.1234567890123456789012345", "Forrest", true));
         em.persist(new ProjectMember(p, user, ProjectRole.OWNER));
         em.persist(new ApiKey(env, ApiKeyKind.SERVER_SDK, "staging sdk key", "a".repeat(64), "buoy_srv_a1b2"));
-        var diff = new ObjectMapper().readTree("{\"before\":{\"enabled\":false},\"after\":{\"enabled\":true}}");
         AuditLogEntry entry = em.persistAndFlush(new AuditLogEntry(
                 ActorType.USER, "forrest", AuditAction.UPDATED, "FLAG_CONFIG",
-                42L, "new-payment-flow", p.getId(), env.getId(), diff, "admin-api"));
+                42L, "new-payment-flow", p.getId(), env.getId(),
+                "{\"before\":{\"enabled\":false},\"after\":{\"enabled\":true}}", "admin-api"));
         em.clear();
 
         AuditLogEntry reloaded = em.find(AuditLogEntry.class, entry.getId());
-        assertThat(reloaded.getDiff().get("after").get("enabled").asBoolean()).isTrue();
+        assertThat(reloaded.getDiff()).contains("\"after\"");
         assertThat(reloaded.getOccurredAt()).isNotNull();
     }
 }

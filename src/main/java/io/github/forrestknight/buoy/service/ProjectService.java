@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.Project;
 import io.github.forrestknight.buoy.domain.ProjectMember;
 import io.github.forrestknight.buoy.domain.ProjectRole;
@@ -18,13 +19,16 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final AppUserRepository userRepository;
     private final ProjectMemberRepository memberRepository;
+    private final AuditService auditService;
 
     public ProjectService(ProjectRepository projectRepository,
                           AppUserRepository userRepository,
-                          ProjectMemberRepository memberRepository) {
+                          ProjectMemberRepository memberRepository,
+                          AuditService auditService) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.memberRepository = memberRepository;
+        this.auditService = auditService;
     }
 
     /** The creating user (when there is one) becomes the project's first OWNER. */
@@ -37,6 +41,8 @@ public class ProjectService {
             userRepository.findByUsername(creatorUsername).ifPresent(user ->
                     memberRepository.save(new ProjectMember(project, user, ProjectRole.OWNER)));
         }
+        auditService.record(AuditAction.CREATED, "PROJECT", project.getId(), project.getKey(),
+                project.getId(), null, null, AuditSnapshots.of(project));
         return project;
     }
 
@@ -53,12 +59,18 @@ public class ProjectService {
 
     public Project update(String key, String name, String description) {
         Project project = get(key);
+        var before = AuditSnapshots.of(project);
         project.setName(name);
         project.setDescription(description);
+        auditService.record(AuditAction.UPDATED, "PROJECT", project.getId(), project.getKey(),
+                project.getId(), null, before, AuditSnapshots.of(project));
         return project;
     }
 
     public void delete(String key) {
-        projectRepository.delete(get(key));
+        Project project = get(key);
+        auditService.record(AuditAction.DELETED, "PROJECT", project.getId(), project.getKey(),
+                project.getId(), null, AuditSnapshots.of(project), null);
+        projectRepository.delete(project);
     }
 }
