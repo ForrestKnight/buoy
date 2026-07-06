@@ -18,9 +18,17 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Full build: unit tests + Testcontainers integration tests (Docker is
-      # available on the hosted runner)
+      # Full build: unit tests, ArchUnit rules, property tests, and
+      # Testcontainers integration tests (Docker is available on the runner)
       - run: ./gradlew build
+
+      # The committed OpenAPI artifact is regenerated during the build;
+      # any uncommitted drift fails CI
+      - name: OpenAPI drift gate
+        run: git diff --exit-code docs/openapi.json
+
+      - name: Docker image build
+        run: docker build -t buoy:ci .
 
       - name: Upload test reports
         if: failure()

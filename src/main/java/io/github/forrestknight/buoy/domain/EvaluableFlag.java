@@ -1,12 +1,13 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
  * Everything the evaluator needs to know about one flag in one environment —
  * a detached, immutable snapshot suitable for caching (no JPA entities inside).
  */
-public record EvaluableFlag(String key, boolean enabled, List<TargetingRule> rules,
+public record EvaluableFlag(String key, boolean enabled, @Nullable List<TargetingRule> rules,
                             boolean defaultVariation, boolean offVariation) {
 
     public EvaluableFlag {

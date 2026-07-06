@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import org.jspecify.annotations.Nullable;
 import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.AuditLogEntry;
 import io.github.forrestknight.buoy.persistence.AuditLogEntryRepository;
@@ -25,7 +26,7 @@ public class AuditQueryService {
         this.projectRepository = projectRepository;
     }
 
-    public Page<AuditLogEntry> query(String projectKey, String entityType, AuditAction action,
+    public Page<AuditLogEntry> query(String projectKey, @Nullable String entityType, @Nullable AuditAction action,
                                      int page, int size) {
         Long projectId = projectRepository.findByKey(projectKey)
                 .orElseThrow(() -> new NotFoundException("Project", projectKey))

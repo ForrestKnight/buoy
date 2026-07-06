@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -42,7 +43,7 @@ public class AppUser {
     protected AppUser() {
     }
 
-    public AppUser(String username, String passwordHash, String displayName, boolean instanceAdmin) {
+    public AppUser(String username, String passwordHash, @Nullable String displayName, boolean instanceAdmin) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.displayName = displayName;
@@ -65,11 +66,11 @@ public class AppUser {
         this.passwordHash = passwordHash;
     }
 
-    public String getDisplayName() {
+    public @Nullable String getDisplayName() {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
+    public void setDisplayName(@Nullable String displayName) {
         this.displayName = displayName;
     }
 

@@ -1860,20 +1860,13 @@
           "float" : {
             "type" : "boolean"
           },
-          "valueNode" : {
+          "integralNumber" : {
             "type" : "boolean"
           },
           "missingNode" : {
             "type" : "boolean"
           },
-          "nodeType" : {
-            "type" : "string",
-            "enum" : [ "ARRAY", "BINARY", "BOOLEAN", "MISSING", "NULL", "NUMBER", "OBJECT", "POJO", "STRING" ]
-          },
-          "string" : {
-            "type" : "boolean"
-          },
-          "integralNumber" : {
+          "valueNode" : {
             "type" : "boolean"
           },
           "pojo" : {
@@ -1908,6 +1901,13 @@
             "type" : "boolean"
           },
           "binary" : {
+            "type" : "boolean"
+          },
+          "nodeType" : {
+            "type" : "string",
+            "enum" : [ "ARRAY", "BINARY", "BOOLEAN", "MISSING", "NULL", "NUMBER", "OBJECT", "POJO", "STRING" ]
+          },
+          "string" : {
             "type" : "boolean"
           },
           "container" : {

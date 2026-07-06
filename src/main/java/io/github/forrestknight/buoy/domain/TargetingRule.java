@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -7,7 +8,7 @@ import java.util.List;
  * the served variation. The id is a stable opaque string assigned at creation and is
  * echoed back in evaluation results as the matched rule id.
  */
-public record TargetingRule(String id, List<Clause> clauses, Rollout rollout) {
+public record TargetingRule(@Nullable String id, List<Clause> clauses, Rollout rollout) {
 
     public TargetingRule {
         clauses = clauses == null ? List.of() : List.copyOf(clauses);

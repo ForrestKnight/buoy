@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import org.jspecify.annotations.Nullable;
 import io.github.forrestknight.buoy.domain.AuditAction;
 import io.github.forrestknight.buoy.domain.Project;
 import io.github.forrestknight.buoy.domain.ProjectMember;
@@ -32,7 +33,7 @@ public class ProjectService {
     }
 
     /** The creating user (when there is one) becomes the project's first OWNER. */
-    public Project create(String key, String name, String description, String creatorUsername) {
+    public Project create(String key, String name, @Nullable String description, @Nullable String creatorUsername) {
         if (projectRepository.existsByKey(key)) {
             throw new DuplicateKeyException("Project", key);
         }
@@ -57,7 +58,7 @@ public class ProjectService {
         return projectRepository.findAll();
     }
 
-    public Project update(String key, String name, String description) {
+    public Project update(String key, String name, @Nullable String description) {
         Project project = get(key);
         var before = AuditSnapshots.of(project);
         project.setName(name);

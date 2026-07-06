@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,13 +11,13 @@ import java.util.regex.Pattern;
  * (numeric identifiers compare numerically and rank below alphanumeric;
  * a pre-release ranks below its release). Build metadata is ignored.
  */
-public record SemVer(int major, int minor, int patch, String prerelease) implements Comparable<SemVer> {
+public record SemVer(int major, int minor, int patch, @Nullable String prerelease) implements Comparable<SemVer> {
 
     private static final Pattern FORMAT = Pattern.compile(
             "(\\d+)\\.(\\d+)\\.(\\d+)(?:-([0-9A-Za-z.-]+))?(?:\\+[0-9A-Za-z.-]+)?");
 
     /** @return empty when the input is not a valid semver — the clause then simply doesn't match. */
-    public static Optional<SemVer> parse(String input) {
+    public static Optional<SemVer> parse(@Nullable String input) {
         if (input == null) {
             return Optional.empty();
         }
@@ -52,7 +53,7 @@ public record SemVer(int major, int minor, int patch, String prerelease) impleme
         return comparePrerelease(prerelease, other.prerelease);
     }
 
-    private static int comparePrerelease(String left, String right) {
+    private static int comparePrerelease(@Nullable String left, @Nullable String right) {
         if (left == null && right == null) {
             return 0;
         }

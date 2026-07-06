@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -139,7 +140,7 @@ public class Evaluator {
         return attribute.equals(clauseValue);
     }
 
-    private static Double toNumber(Object value) {
+    private static @Nullable Double toNumber(@Nullable Object value) {
         switch (value) {
             case null -> {
                 return null;

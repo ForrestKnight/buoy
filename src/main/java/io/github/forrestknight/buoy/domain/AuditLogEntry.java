@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -68,8 +69,8 @@ public class AuditLogEntry {
     }
 
     public AuditLogEntry(ActorType actorType, String actorName, AuditAction action, String entityType,
-                         Long entityId, String entityKey, Long projectId, Long environmentId,
-                         String diff, String source) {
+                         Long entityId, @Nullable String entityKey, @Nullable Long projectId,
+                         @Nullable Long environmentId, @Nullable String diff, @Nullable String source) {
         this.actorType = actorType;
         this.actorName = actorName;
         this.action = action;
@@ -110,23 +111,23 @@ public class AuditLogEntry {
         return entityId;
     }
 
-    public String getEntityKey() {
+    public @Nullable String getEntityKey() {
         return entityKey;
     }
 
-    public Long getProjectId() {
+    public @Nullable Long getProjectId() {
         return projectId;
     }
 
-    public Long getEnvironmentId() {
+    public @Nullable Long getEnvironmentId() {
         return environmentId;
     }
 
-    public String getDiff() {
+    public @Nullable String getDiff() {
         return diff;
     }
 
-    public String getSource() {
+    public @Nullable String getSource() {
         return source;
     }
 }

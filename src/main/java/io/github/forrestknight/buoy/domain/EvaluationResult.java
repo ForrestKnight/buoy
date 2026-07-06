@@ -1,6 +1,7 @@
 package io.github.forrestknight.buoy.domain;
 
-public record EvaluationResult(boolean value, EvaluationReason reason, String matchedRuleId) {
+import org.jspecify.annotations.Nullable;
+public record EvaluationResult(boolean value, EvaluationReason reason, @Nullable String matchedRuleId) {
 
     public static EvaluationResult of(boolean value, EvaluationReason reason) {
         return new EvaluationResult(value, reason, null);

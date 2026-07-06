@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,7 +39,7 @@ public class Project {
     protected Project() {
     }
 
-    public Project(String key, String name, String description) {
+    public Project(String key, String name, @Nullable String description) {
         this.key = key;
         this.name = name;
         this.description = description;
@@ -60,11 +61,11 @@ public class Project {
         this.name = name;
     }
 
-    public String getDescription() {
+    public @Nullable String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(@Nullable String description) {
         this.description = description;
     }
 

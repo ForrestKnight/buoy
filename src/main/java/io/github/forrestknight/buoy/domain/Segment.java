@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -58,7 +59,7 @@ public class Segment {
     protected Segment() {
     }
 
-    public Segment(Project project, String key, String name, String description, List<Clause> clauses) {
+    public Segment(Project project, String key, String name, @Nullable String description, @Nullable List<Clause> clauses) {
         this.project = project;
         this.key = key;
         this.name = name;
@@ -86,11 +87,11 @@ public class Segment {
         this.name = name;
     }
 
-    public String getDescription() {
+    public @Nullable String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(@Nullable String description) {
         this.description = description;
     }
 
@@ -98,7 +99,7 @@ public class Segment {
         return clauses;
     }
 
-    public void setClauses(List<Clause> clauses) {
+    public void setClauses(@Nullable List<Clause> clauses) {
         this.clauses = clauses == null ? new ArrayList<>() : new ArrayList<>(clauses);
     }
 

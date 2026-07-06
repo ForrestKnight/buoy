@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import java.util.Map;
 
 /**
@@ -7,14 +8,14 @@ import java.util.Map;
  * attributes ({@code plan}, {@code country}, {@code appVersion}, ...). The special
  * attribute name {@code key} resolves to the context key itself.
  */
-public record EvaluationContext(String key, Map<String, Object> attributes) {
+public record EvaluationContext(String key, @Nullable Map<String, Object> attributes) {
 
     public EvaluationContext {
         attributes = attributes == null ? Map.of() : Map.copyOf(attributes);
     }
 
     /** @return the attribute value, or {@code null} when absent. */
-    public Object attribute(String name) {
+    public @Nullable Object attribute(@Nullable String name) {
         if ("key".equals(name)) {
             return key;
         }

@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -91,7 +92,7 @@ public class ApiKey {
         return createdAt;
     }
 
-    public Instant getRevokedAt() {
+    public @Nullable Instant getRevokedAt() {
         return revokedAt;
     }
 

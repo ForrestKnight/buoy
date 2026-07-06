@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.domain;
 
+import org.jspecify.annotations.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -62,7 +63,7 @@ public class Flag {
     protected Flag() {
     }
 
-    public Flag(Project project, String key, String name, String description, List<String> tags) {
+    public Flag(Project project, String key, String name, @Nullable String description, @Nullable List<String> tags) {
         this.project = project;
         this.key = key;
         this.name = name;
@@ -90,11 +91,11 @@ public class Flag {
         this.name = name;
     }
 
-    public String getDescription() {
+    public @Nullable String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(@Nullable String description) {
         this.description = description;
     }
 
@@ -106,7 +107,7 @@ public class Flag {
         return tags;
     }
 
-    public void setTags(List<String> tags) {
+    public void setTags(@Nullable List<String> tags) {
         this.tags = tags == null ? new ArrayList<>() : new ArrayList<>(tags);
     }
 

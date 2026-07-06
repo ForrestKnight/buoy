@@ -1,5 +1,6 @@
 package io.github.forrestknight.buoy.service;
 
+import org.jspecify.annotations.Nullable;
 import io.github.forrestknight.buoy.config.ApiKeyAuthentication;
 import io.github.forrestknight.buoy.domain.ActorType;
 import io.github.forrestknight.buoy.domain.AuditAction;
@@ -34,8 +35,9 @@ public class AuditService {
      * @param before snapshot before the change ({@code null} for CREATED)
      * @param after  snapshot after the change ({@code null} for DELETED)
      */
-    public void record(AuditAction action, String entityType, Long entityId, String entityKey,
-                       Long projectId, Long environmentId, Object before, Object after) {
+    public void record(AuditAction action, String entityType, Long entityId, @Nullable String entityKey,
+                       @Nullable Long projectId, @Nullable Long environmentId,
+                       @Nullable Object before, @Nullable Object after) {
         Actor actor = currentActor();
         repository.save(new AuditLogEntry(actor.type(), actor.name(), action, entityType,
                 entityId, entityKey, projectId, environmentId, diff(before, after), currentSource()));
@@ -44,7 +46,7 @@ public class AuditService {
     private record Actor(ActorType type, String name) {
     }
 
-    private String diff(Object before, Object after) {
+    private String diff(@Nullable Object before, @Nullable Object after) {
         ObjectNode diff = objectMapper.createObjectNode();
         if (before == null) {
             diff.putNull("before");
