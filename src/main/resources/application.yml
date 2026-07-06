@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: buoy
+  datasource:
+    url: jdbc:postgresql://${BUOY_DB_HOST:localhost}:${BUOY_DB_PORT:5432}/${BUOY_DB_NAME:buoy}
+    username: ${BUOY_DB_USER:buoy}
+    password: ${BUOY_DB_PASSWORD:buoy}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
