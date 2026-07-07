@@ -39,3 +39,6 @@ out/
 ### Buoy (local-only context, never committed) ###
 .devnotes/
 .env
+
+### Test artifacts ###
+.jqwik-database
