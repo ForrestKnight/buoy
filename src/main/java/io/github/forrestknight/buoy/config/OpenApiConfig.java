@@ -3,11 +3,20 @@ package io.github.forrestknight.buoy.config;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.JsonNode;
 
 @Configuration
 public class OpenApiConfig {
+
+    static {
+        // JsonNode fields (audit diffs) are free-form JSON, not a bean to introspect —
+        // reflective introspection also makes the generated document non-deterministic
+        // across JVMs, which the CI drift gate rightly refuses.
+        SpringDocUtils.getConfig().replaceWithClass(JsonNode.class, Object.class);
+    }
 
     @Bean
     OpenAPI buoyOpenApi() {
